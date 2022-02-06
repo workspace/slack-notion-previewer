@@ -3,6 +3,7 @@ import { App } from '@slack/bolt';
 import { join, keyBy, omit, mapValues } from 'lodash';
 import { getPageByURL } from './notion/api';
 import {
+    Emoji,
     TitlePropertyValue,
 } from "@notionhq/client/build/src/api-types"
 
