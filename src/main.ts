@@ -1,6 +1,10 @@
 import 'dotenv/config'
 import { App } from '@slack/bolt';
-import { last, keyBy, omit, mapValues } from 'lodash';
+import { join, keyBy, omit, mapValues } from 'lodash';
+import { getPageByURL } from './notion/api';
+import {
+    TitlePropertyValue,
+} from "@notionhq/client/build/src/api-types"
 
 const app = new App({
     token: process.env.SLACK_BOT_TOKEN,
@@ -13,21 +17,31 @@ const app = new App({
 app.event('link_shared', async ({ event, client }) => {
     Promise.all(event.links.map(async ({ url }: { url: string }) => {
         const pageUrl = new URL(url);
-        const lastPathSegment = last(pageUrl.pathname.split("/"))
-        const pageId = lastPathSegment ? last(lastPathSegment.split("-")) : ""
-        if (pageId === "") {
-            throw new Error("pageId should not be null");
-        }
+        const page = await getPageByURL(pageUrl);
+        if (!page) throw new Error("Page is not found")
+        const title = join(
+            (page?.properties["title"] as TitlePropertyValue)
+                ?.title
+                ?.map(title => title.plain_text, "") || [],
+            ""
+        );
         return {
-            title: "title test",
-            title_link: "https://notion.so",
-            url: url
-        };
+            blocks: [
+                {
+                    type: "header",
+                    text: {
+                        type: "plain_text",
+                        text: title,
+                        emoji: true
+                    }
+                },
+            ],
+            url: url,
+        }
     }))
         .then(attachments => keyBy(attachments, 'url'))
         .then(unfurls => mapValues(unfurls, attachment => omit(attachment, 'url')))
         .then(unfurls => {
-            console.log(unfurls)
             client.chat.unfurl({
                 ts: event.message_ts,
                 channel: event.channel,
