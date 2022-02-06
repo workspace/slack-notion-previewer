@@ -35,10 +35,12 @@ function buildNotionAppUrl(page: Page): string {
 function buildMessageAttachmentBlocks(page: Page): Block[] {
     const emojiIcon = (page.icon as Emoji)?.emoji
     const externalFileIcon = (page.icon as ExternalFile)?.external?.url
+    const titleProperty = Object.values(page.properties)
+        .find(property => property.type == "title") as TitlePropertyValue
     const title = join(
         [
             ...(emojiIcon ? [emojiIcon] : []),
-            ...(page.properties["title"] as TitlePropertyValue)
+            ...titleProperty
                 ?.title
                 ?.map(title => title.plain_text, "") || []
         ],
