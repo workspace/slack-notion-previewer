@@ -18,11 +18,15 @@ app.event('link_shared', async ({ event, client }) => {
     Promise.all(event.links.map(async ({ url }: { url: string }) => {
         const pageUrl = new URL(url);
         const page = await getPageByURL(pageUrl);
-        if (!page) throw new Error("Page is not found")
+        if (!page) throw new Error("Page is not found");
+        const iconEmoji = (page?.icon as Emoji)?.emoji
         const title = join(
-            (page?.properties["title"] as TitlePropertyValue)
-                ?.title
-                ?.map(title => title.plain_text, "") || [],
+            [
+                ...(iconEmoji ? [iconEmoji] : []),
+                ...(page?.properties["title"] as TitlePropertyValue)
+                    ?.title
+                    ?.map(title => title.plain_text, "") || []
+            ],
             ""
         );
         return {
