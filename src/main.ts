@@ -2,14 +2,12 @@ import 'dotenv/config'
 import { App } from '@slack/bolt';
 import {
     Button,
-    ImageElement,
     MrkdwnElement,
     PlainTextElement,
     Block,
     ActionsBlock,
-    HeaderBlock,
     ImageBlock,
-    ContextBlock,
+    SectionBlock,
 } from '@slack/types';
 import { join, keyBy, omit, mapValues } from 'lodash';
 import { getPageByURL } from './notion/api';
@@ -48,27 +46,12 @@ function buildMessageAttachmentBlocks(page: Page): Block[] {
     const notionAppURL = buildNotionAppUrl(page)
     return [
         {
-            type: "context",
-            elements: [
-                {
-                    type: "image",
-                    image_url: "https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png",
-                    alt_text: "Notion logo"
-                } as ImageElement,
-                {
-                    type: "mrkdwn",
-                    text: `*<${page.url}|Notion>*`
-                } as MrkdwnElement
-            ]
-        } as ContextBlock,
-        {
-            type: "header",
+            type: "section",
             text: {
-                type: "plain_text",
-                text: title,
-                emoji: true
-            }
-        } as HeaderBlock,
+                type: "mrkdwn",
+                text: `*<${page.url}|${title}>*`,
+            } as MrkdwnElement
+        } as SectionBlock,
         ...coverImageUrl
             ? [
                 {
