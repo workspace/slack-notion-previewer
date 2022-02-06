@@ -1,8 +1,13 @@
 import 'dotenv/config'
 import { App } from '@slack/bolt';
+import {
+    Block,
+    HeaderBlock
+} from '@slack/types';
 import { join, keyBy, omit, mapValues } from 'lodash';
 import { getPageByURL } from './notion/api';
 import {
+    Page,
     Emoji,
     TitlePropertyValue,
 } from "@notionhq/client/build/src/api-types"
@@ -15,32 +20,36 @@ const app = new App({
     port: parseInt(process.env.PORT || "3000")
 });
 
+function buildMessageAttachmentBlocks(page: Page): Block[] {
+    const iconEmoji = (page?.icon as Emoji)?.emoji
+    const title = join(
+        [
+            ...(iconEmoji ? [iconEmoji] : []),
+            ...(page?.properties["title"] as TitlePropertyValue)
+                ?.title
+                ?.map(title => title.plain_text, "") || []
+        ],
+        ""
+    );
+    return [
+        {
+            type: "header",
+            text: {
+                type: "plain_text",
+                text: title,
+                emoji: true
+            }
+        } as HeaderBlock,
+    ]
+}
+
 app.event('link_shared', async ({ event, client }) => {
     Promise.all(event.links.map(async ({ url }: { url: string }) => {
         const pageUrl = new URL(url);
         const page = await getPageByURL(pageUrl);
         if (!page) throw new Error("Page is not found");
-        const iconEmoji = (page?.icon as Emoji)?.emoji
-        const title = join(
-            [
-                ...(iconEmoji ? [iconEmoji] : []),
-                ...(page?.properties["title"] as TitlePropertyValue)
-                    ?.title
-                    ?.map(title => title.plain_text, "") || []
-            ],
-            ""
-        );
         return {
-            blocks: [
-                {
-                    type: "header",
-                    text: {
-                        type: "plain_text",
-                        text: title,
-                        emoji: true
-                    }
-                },
-            ],
+            blocks: buildMessageAttachmentBlocks(page),
             url: url,
         }
     }))
