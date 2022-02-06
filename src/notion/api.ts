@@ -1,6 +1,7 @@
 import { Client } from '@notionhq/client'
 import {
     Page,
+    Block,
 } from "@notionhq/client/build/src/api-types"
 
 const notion = new Client({
@@ -37,6 +38,18 @@ export async function getPageByURL(pageUrl: URL): Promise<Page | undefined> {
             page_id: pageId
         });
         return page;
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+export async function getPageBlocksByURL(pageUrl: URL): Promise<Block[] | undefined> {
+    try {
+        const pageId = getPageIdByURL(pageUrl);
+        const blocks = await notion.blocks.children.list({
+            block_id: pageId
+        });
+        return blocks.results
     } catch (error) {
         console.error(error);
     }
