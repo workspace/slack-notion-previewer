@@ -2,13 +2,15 @@ import 'dotenv/config'
 import { App } from '@slack/bolt';
 import {
     Block,
-    HeaderBlock
+    HeaderBlock,
+    ImageBlock,
 } from '@slack/types';
 import { join, keyBy, omit, mapValues } from 'lodash';
 import { getPageByURL } from './notion/api';
 import {
     Page,
     Emoji,
+    ExternalFile,
     TitlePropertyValue,
 } from "@notionhq/client/build/src/api-types"
 
@@ -21,16 +23,17 @@ const app = new App({
 });
 
 function buildMessageAttachmentBlocks(page: Page): Block[] {
-    const iconEmoji = (page?.icon as Emoji)?.emoji
+    const iconEmoji = (page.icon as Emoji)?.emoji
     const title = join(
         [
             ...(iconEmoji ? [iconEmoji] : []),
-            ...(page?.properties["title"] as TitlePropertyValue)
+            ...(page.properties["title"] as TitlePropertyValue)
                 ?.title
                 ?.map(title => title.plain_text, "") || []
         ],
         ""
     );
+    const coverImageUrl = (page.cover as ExternalFile)?.external?.url
     return [
         {
             type: "header",
@@ -40,6 +43,15 @@ function buildMessageAttachmentBlocks(page: Page): Block[] {
                 emoji: true
             }
         } as HeaderBlock,
+        ...coverImageUrl
+            ? [
+                {
+                    type: "image",
+                    image_url: coverImageUrl,
+                    alt_text: "Page cover"
+                } as ImageBlock,
+            ]
+            : []
     ]
 }
 
