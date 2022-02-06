@@ -3,6 +3,7 @@ import { App } from '@slack/bolt';
 import {
     Button,
     MrkdwnElement,
+    ImageElement,
     PlainTextElement,
     Block,
     ActionsBlock,
@@ -32,10 +33,11 @@ function buildNotionAppUrl(page: Page): string {
 }
 
 function buildMessageAttachmentBlocks(page: Page): Block[] {
-    const iconEmoji = (page.icon as Emoji)?.emoji
+    const emojiIcon = (page.icon as Emoji)?.emoji
+    const externalFileIcon = (page.icon as ExternalFile)?.external?.url
     const title = join(
         [
-            ...(iconEmoji ? [iconEmoji] : []),
+            ...(emojiIcon ? [emojiIcon] : []),
             ...(page.properties["title"] as TitlePropertyValue)
                 ?.title
                 ?.map(title => title.plain_text, "") || []
@@ -46,18 +48,27 @@ function buildMessageAttachmentBlocks(page: Page): Block[] {
     const notionAppURL = buildNotionAppUrl(page)
     return [
         {
-            type: "section",
-            text: {
-                type: "mrkdwn",
-                text: `*<${page.url}|${title}>*`,
-            } as MrkdwnElement
+            ...{
+                type: "section",
+                text: {
+                    type: "mrkdwn",
+                    text: `*<${page.url}|${title}>*`,
+                } as MrkdwnElement
+            },
+            ...(externalFileIcon) && {
+                accessory: {
+                    type: "image",
+                    image_url: externalFileIcon,
+                    alt_text: "Page Icon"
+                } as ImageElement
+            }
         } as SectionBlock,
         ...coverImageUrl
             ? [
                 {
                     type: "image",
                     image_url: coverImageUrl,
-                    alt_text: "Page cover"
+                    alt_text: "Page Cover"
                 } as ImageBlock,
             ]
             : [],
