@@ -1,9 +1,12 @@
 import 'dotenv/config'
 import { App } from '@slack/bolt';
 import {
+    Button,
     ImageElement,
     MrkdwnElement,
+    PlainTextElement,
     Block,
+    ActionsBlock,
     HeaderBlock,
     ImageBlock,
     ContextBlock,
@@ -25,6 +28,11 @@ const app = new App({
     port: parseInt(process.env.PORT || "3000")
 });
 
+function buildNotionAppUrl(page: Page): string {
+    const pageIdWithoutDash = page.id.replace(/-/g, "");
+    return `notion://notion.so/${pageIdWithoutDash}`
+}
+
 function buildMessageAttachmentBlocks(page: Page): Block[] {
     const iconEmoji = (page.icon as Emoji)?.emoji
     const title = join(
@@ -37,6 +45,7 @@ function buildMessageAttachmentBlocks(page: Page): Block[] {
         ""
     );
     const coverImageUrl = (page.cover as ExternalFile)?.external?.url
+    const notionAppURL = buildNotionAppUrl(page)
     return [
         {
             type: "context",
@@ -68,9 +77,27 @@ function buildMessageAttachmentBlocks(page: Page): Block[] {
                     alt_text: "Page cover"
                 } as ImageBlock,
             ]
-            : []
+            : [],
+        {
+            type: "actions",
+            elements: [
+                {
+                    type: "button",
+                    text: {
+                        type: "plain_text",
+                        text: "Open in Notion"
+                    } as PlainTextElement,
+                    url: notionAppURL,
+                    action_id: "open_in_notion"
+                } as Button
+            ]
+        } as ActionsBlock,
     ]
 }
+
+app.action('open_in_notion', async ({ ack }) => {
+    await ack();
+});
 
 app.event('link_shared', async ({ event, client }) => {
     Promise.all(event.links.map(async ({ url }: { url: string }) => {
